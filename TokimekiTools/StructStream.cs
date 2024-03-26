@@ -14,10 +14,6 @@ namespace AdvancedBinary
     public enum StringStyle
     {
         /// <summary>
-        /// 4个字节倍数，以/0结尾 
-        /// </summary>
-        U4CString,
-        /// <summary>
         /// 2个字节的Unicode uincode16le
         /// </summary>
         Unicode16LEString,
@@ -62,8 +58,6 @@ namespace AdvancedBinary
     /// Unicode C-Style String (null terminated 2x)
     /// </summary>
     public class UCString : Attribute { }
-
-    public class U4CString : Attribute { }
     /// <summary>
     /// Pascal-Style String (int32 Length Prefix)
     /// </summary>
@@ -124,7 +118,6 @@ namespace AdvancedBinary
         public const string PSTRING = "PString";
         public const string CSTRING = "CString";
         public const string UCSTRING = "UCString";
-        public const string U4CSTRING = "U4CString";
         public const string FSTRING = "FString";
         public const string STRUCT = "StructField";
         public const string IGNORE = "Ignore";
@@ -427,11 +420,6 @@ namespace AdvancedBinary
                         Write(Value, StringStyle.UCString);
                         break;
                     }
-                    if (HasAttribute(field, Const.U4CSTRING))
-                    {
-                        Write(Value, StringStyle.U4CString);
-                        break;
-                    }
                     if (HasAttribute(field, Const.PSTRING))
                     {
                         Write(field, Value, StringStyle.PString);
@@ -473,17 +461,6 @@ namespace AdvancedBinary
         {
             switch (Style)
             {
-                case StringStyle.U4CString:
-                    byte[] bytes1 = Encoding.Unicode.GetBytes(String+ "\x0");
-                    // 确保字节数组长度是4的倍数
-                    int remainder = bytes1.Length % 4;
-                    if (remainder != 0)
-                    {
-                        int newSize = bytes1.Length + (4 - remainder);
-                        Array.Resize(ref bytes1, newSize);
-                    }
-                    base.Write(bytes1, 0, bytes1.Length);
-                    break;
                 case StringStyle.Unicode16LEString:
                     byte[] bytes = Encoding.Unicode.GetBytes(String);
                     base.Write(bytes, 0, bytes.Length);
@@ -502,21 +479,6 @@ namespace AdvancedBinary
         {
             switch (Style)
             {
-                case StringStyle.U4CString:
-                    byte[] bytes1 = Encoding.Unicode.GetBytes(Value + "\x0");
-                    // 确保字节数组长度是4的倍数
-                    int remainder = bytes1.Length % 4;
-                    if (remainder != 0)
-                    {
-                        int newSize = bytes1.Length + (4 - remainder);
-                        Array.Resize(ref bytes1, newSize);
-                    }
-                    base.Write(bytes1, 0, bytes1.Length);
-                    break;
-                case StringStyle.Unicode16LEString:
-                    byte[] bytes = Encoding.Unicode.GetBytes(Value);
-                    base.Write(bytes, 0, bytes.Length);
-                    break;
                 case StringStyle.UCString:
                 case StringStyle.CString:
                     List<byte> Buffer = new List<byte>(Encoding.GetBytes(Value + "\x0"));
@@ -772,11 +734,6 @@ namespace AdvancedBinary
                         Value = ReadString(StringStyle.UCString);
                         break;
                     }
-                    if (Tools.HasAttribute(field, Const.U4CSTRING))
-                    {
-                        Value = ReadString(StringStyle.U4CString);
-                        break;
-                    }
                     if (Tools.HasAttribute(field, Const.PSTRING))
                     {
                         Value = ReadString(StringStyle.PString, field);
@@ -785,11 +742,6 @@ namespace AdvancedBinary
                     if (Tools.HasAttribute(field, Const.UNICODE16LESTRING))
                     {
                         Value = ReadString(StringStyle.Unicode16LEString, field);
-                        break;
-                    }
-                    if(Tools.HasAttribute(field, Const.U4CSTRING))
-                    {
-                        Value = ReadString(StringStyle.U4CString, field);
                         break;
                     }
                     if (Tools.HasAttribute(field, Const.FSTRING))
@@ -839,24 +791,6 @@ namespace AdvancedBinary
                 case StringStyle.Unicode16LEString:
                     var bytes = base.ReadBytes(2);
                     return Encoding.Unicode.GetString(bytes);
-                case StringStyle.U4CString:
-                    while (true)
-                    {
-                        byte Byte = base.ReadByte();
-                        if (Byte < 1)
-                        {
-                            int remainingBytes = (4 - ((Buffer.Count+1) % 4)) % 4;
-                            for (int i = 0; i < remainingBytes; i++)
-                            {
-                                byte nextByte = base.ReadByte();
-                                //Buffer.Add(nextByte);
-                            }
-                            break;
-                        }
-                           
-                        Buffer.Add(Byte);
-                    }
-                    return Encoding.GetString(Buffer.ToArray());
                 case StringStyle.CString:
                     while (true)
                     {
