@@ -22,6 +22,7 @@ jobs:
       run : 7z a -t7z -mx=9 TokimekiTools_win-x64_release.7z ./TokimekiTools/publish/
     - uses: ncipollo/release-action@v1
       with:
-        artifacts: "TokimekiTools_win-x64_release.7z"
+        artifacts: "./TokimekiTools_win-x64_release.7z"
         bodyFile: ""
+        allowUpdates: "true"
         token: ${{ secrets.GITHUB_TOKEN }}
